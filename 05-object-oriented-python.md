@@ -205,6 +205,9 @@ class Config:
 service = MyService("world")
 config = Config(host="localhost")
 config_custom = Config(host="localhost", port=3000)
+
+# --- Static method call (no instance needed) ---
+MyService.utility()          # "I'm a utility"
 ```
 
 ---
