@@ -12,18 +12,18 @@ dependencies, build configuration, and tooling settings. It is the Python equiva
 | Go          | `go.mod`            |
 | Java/Gradle | `build.gradle.kts`  |
 
-## Anatomy of Our pyproject.toml
+## Anatomy of a pyproject.toml
 
 ```toml
 [project]
-name = "2026-hackathon"
+name = "my-app"
 version = "0.1.0"
-description = "Add your description here"
+description = "A short description of your project"
 requires-python = ">=3.9"
 dependencies = []
 
 [project.scripts]
-hackathon = "src.main:main"
+my-app = "src.main:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -48,13 +48,13 @@ The core section. Defined by PEP 621 (a Python standard, not tool-specific).
 Maps command names to Python functions:
 
 ```toml
-hackathon = "src.main:main"
+my-app = "src.main:main"
 ```
 
-This means: "create a CLI command `hackathon` that calls the `main()` function from
+This means: "create a CLI command `my-app` that calls the `main()` function from
 the module `src.main` (i.e., the file `src/main.py`)."
 
-When you run `uv sync`, a wrapper script is generated at `.venv/bin/hackathon` that
+When you run `uv sync`, a wrapper script is generated at `.venv/bin/my-app` that
 performs this import and function call. This is how tools like `pytest`, `flask`, and
 `black` work — they are all entry points.
 
@@ -80,7 +80,7 @@ packages = ["src"]
 ```
 
 Tells hatchling where to find your Python packages. Without this, it looks for a directory
-matching the project name (`2026_hackathon/`), which doesn't exist since we use a `src/`
+matching the project name (e.g., `my_app/`), which doesn't exist if you use a `src/`
 layout.
 
 ## Historical Context

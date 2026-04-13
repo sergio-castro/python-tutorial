@@ -26,7 +26,7 @@ my-project/
 │   ├── bin/                # Python interpreter + installed CLI tools
 │   │   ├── python          # The isolated Python binary
 │   │   ├── pip             # Package installer
-│   │   └── hackathon       # Any CLI entry points you define
+│   │   └── my-app          # Any CLI entry points you define
 │   ├── lib/                # Installed packages live here
 │   └── pyvenv.cfg          # Metadata (which Python version, etc.)
 ├── src/                    # Your source code
@@ -35,9 +35,9 @@ my-project/
 
 ## Key Insight
 
-The `.venv/` folder is **disposable**. It is derived entirely from your project manifest and
-lock file. You can delete it and recreate it at any time (`uv sync` or `python -m venv .venv`
-+ `pip install`). It should never be committed to git.
+The `.venv/` folder is **disposable**. It is derived entirely from your project manifest
+and lock file (explained in the next chapters), so you can delete it and recreate it at any
+time. It should never be committed to git — treat it like `node_modules/`.
 
 ## Analogy by Language
 
@@ -51,7 +51,7 @@ lock file. You can delete it and recreate it at any time (`uv sync` or `python -
 ## How to Create One
 
 ```bash
-# With uv (recommended for this project)
+# With uv (recommended)
 uv venv
 
 # With the Python standard library (no extra tools needed)

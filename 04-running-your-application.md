@@ -5,7 +5,7 @@ you'll see in almost every Python file.
 
 ## The `if __name__ == "__main__"` Guard
 
-Open any Python file in this project and you'll find something like this at the bottom:
+You'll commonly find something like this at the bottom of Python files:
 
 ```python
 def say_hello() -> None:
@@ -55,7 +55,7 @@ It ensures the correct Python interpreter and all installed packages are availab
 source .venv/bin/activate
 
 # Your shell prompt usually changes to indicate activation:
-# (2026-hackathon) $
+# (my-app) $
 
 # Step 2: Now 'python' refers to the venv's Python, not the system one
 python src/hello_world.py
@@ -66,7 +66,7 @@ deactivate
 
 **What does activation actually do?** It prepends `.venv/bin/` to your shell's `PATH`
 environment variable. That's it. When you type `python`, the shell finds `.venv/bin/python`
-before the system Python. When you type `hackathon`, it finds `.venv/bin/hackathon`.
+before the system Python. When you type `my-app`, it finds `.venv/bin/my-app`.
 
 This is equivalent to how `nvm use` works in Node.js — it changes which binary `node`
 points to.
@@ -100,22 +100,22 @@ section in `pyproject.toml` maps command names to Python functions:
 
 ```toml
 [project.scripts]
-hackathon = "src.hello_world:say_hello"
+my-app = "src.hello_world:say_hello"
 ```
 
-This means: "create a command called `hackathon` that calls `say_hello()` from
+This means: "create a command called `my-app` that calls `say_hello()` from
 `src/hello_world.py`."
 
-When you run `uv sync`, a small wrapper script is generated at `.venv/bin/hackathon`.
+When you run `uv sync`, a small wrapper script is generated at `.venv/bin/my-app`.
 You can then run it with:
 
 ```bash
 # Via uv (no activation needed)
-uv run hackathon
+uv run my-app
 
 # Or activate first, then just use the command name
 source .venv/bin/activate
-hackathon
+my-app
 ```
 
 You can define as many entry points as you want — each pointing to a different function
@@ -123,7 +123,7 @@ in a different file:
 
 ```toml
 [project.scripts]
-hackathon    = "src.hello_world:say_hello"
+my-app       = "src.hello_world:say_hello"
 post-request = "src.post_request:main"
 dashboard    = "src.dashboard:main"
 ```
@@ -134,9 +134,13 @@ itself — they are all entry point scripts generated during installation.
 ## Quick Reference
 
 ```bash
-# --- Project setup (one time) ---
-uv venv                        # Create virtual environment
-uv sync                        # Install all dependencies + your project
+# --- Starting a new project ---
+uv init my-app                 # Create a new project (like npm init)
+cd my-app
+uv sync                        # Create venv + install dependencies
+
+# --- Cloning an existing project ---
+uv sync                        # Create venv (if needed) + install all dependencies
 
 # --- Adding dependencies ---
 uv add requests                # Add a package (like npm install --save)
@@ -144,20 +148,21 @@ uv add --dev pytest            # Add a dev-only dependency
 
 # --- Running code ---
 uv run python src/hello_world.py  # Run a script directly
-uv run hackathon                  # Run a CLI entry point
+uv run my-app                     # Run a CLI entry point
 uv run pytest                     # Run tests
 
 # --- Manual venv activation (alternative to uv run) ---
 source .venv/bin/activate      # Activate
 python src/hello_world.py      # Run with plain python
-hackathon                      # Run CLI entry point
+my-app                         # Run CLI entry point
 deactivate                     # Deactivate when done
 
 # --- Housekeeping ---
+uv sync                        # Regenerate entry points after editing [project.scripts]
 rm -rf .venv && uv sync        # Nuclear option: recreate venv from scratch
 ```
 
 ---
 
 Previous: [Project Configuration](./03-project-configuration.md) |
-Back to [Index](./tutorial.md)
+Next: [Object-Oriented Python](./05-object-oriented-python.md)

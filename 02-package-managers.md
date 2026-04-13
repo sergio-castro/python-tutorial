@@ -7,7 +7,7 @@ tutorials, Stack Overflow answers, and documentation reference. **pip is not dep
 It is actively maintained and remains the default tool in the Python ecosystem.
 
 ```bash
-# Typical pip workflow (for reference — this project uses uv instead)
+# Typical pip workflow (for reference — most modern projects use uv instead)
 python -m venv .venv                  # Create a virtual environment
 source .venv/bin/activate             # Activate it
 pip install requests                  # Install a package
@@ -32,14 +32,14 @@ pip works fine for simple projects, but has friction points at scale:
 `uv` is a third-party tool (by Astral, the team behind `ruff`) written in Rust. It is
 significantly faster than pip and combines several tools into one:
 
-| Concern                    | pip ecosystem (multiple tools)   | uv (single tool)     |
-|----------------------------|----------------------------------|----------------------|
-| Create virtual environments| `python -m venv`                 | `uv venv`            |
-| Install packages           | `pip install`                    | `uv add` / `uv pip`  |
-| Lock dependencies          | `pip-tools` / `pip-compile`      | `uv lock`            |
-| Install project in dev mode| `pip install -e .`               | `uv sync`            |
-| Run in venv without activating | Not built-in                 | `uv run`             |
-| Manage Python versions     | `pyenv`                          | `uv python install`  |
+| What you want to do                          | pip ecosystem (multiple tools)   | uv (single tool)     |
+|----------------------------------------------|----------------------------------|----------------------|
+| Create an empty virtual environment          | `python -m venv .venv`           | `uv venv`            |
+| Add a dependency to your project             | `pip install` + edit requirements| `uv add`             |
+| Lock all dependency versions                 | `pip-tools` / `pip-compile`      | `uv lock`            |
+| Install all dependencies (creates venv too)  | `pip install -e .`               | `uv sync`            |
+| Run a command inside the venv                | `source .venv/bin/activate` first| `uv run`             |
+| Manage Python versions                       | `pyenv`                          | `uv python install`  |
 
 ### Does uv Use pip Behind the Curtains?
 
@@ -68,9 +68,9 @@ All of these still work and are maintained. uv is not the "official" replacement
 them — it's a faster, unified alternative. The ecosystem hasn't converged on a single tool
 (yet), which is why you'll see different projects using different combinations.
 
-### Why This Project Uses uv
+### Why Use uv
 
-This project uses `uv` because:
+uv is the recommended choice for new projects because:
 
 - **Single tool** — no need to remember `venv` + `pip` + `pip-tools` separately
 - **`uv run`** — runs commands in the venv without activation (fewer mistakes)
@@ -89,8 +89,7 @@ pip install some-package      # Works fine inside a uv-managed venv
 ```
 
 However, mixing tools can cause the lock file (`uv.lock`) and `pyproject.toml` to get out
-of sync with what's actually installed. **Pick one and stick with it.** For this project,
-use `uv`.
+of sync with what's actually installed. **Pick one and stick with it.**
 
 ## Analogy
 

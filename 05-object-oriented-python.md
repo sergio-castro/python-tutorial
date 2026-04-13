@@ -46,8 +46,8 @@ class Example:
 implementation detail" without preventing access. Python's philosophy is "we're all
 consenting adults" — the convention is respected, but not enforced by the language.
 
-In this project, `self._config` and `self._session` in `GraphService` use this pattern:
-they're internal state that callers shouldn't depend on.
+For example, `self._endpoint` in `GraphService` above uses this pattern:
+it's internal state that callers shouldn't depend on.
 
 ## Dataclasses: Python's Answer to Records/DTOs
 
@@ -154,8 +154,8 @@ They exist for:
 | TypeScript  | Static, compiled| Type hints + `mypy`        |
 | JavaScript  | Dynamic, none   | Python without type hints  |
 
-**Best practice:** always write type hints (as we do in this project), and optionally run
-`mypy` to catch type errors before runtime.
+**Best practice:** always write type hints, and optionally run `mypy` to catch type errors
+before runtime.
 
 ## Inheritance
 
