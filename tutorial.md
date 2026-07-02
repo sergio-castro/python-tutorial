@@ -7,6 +7,9 @@ but zero Python knowledge.
 Each topic is covered in its own file. Read them in order if you're starting from scratch,
 or jump to the one you need.
 
+Prefer hands-on mini-walkthroughs? See the [labs](./labs/README.md) — short, self-contained
+exercises (start with [Hello World](./labs/hello-world/README.md)).
+
 ---
 
 ## Topics
