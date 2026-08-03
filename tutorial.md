@@ -26,8 +26,9 @@ exercises (start with [Hello World](./labs/hello-world/README.md)).
 4. [Running Your Application](./04-running-your-application.md)
    Three ways to run Python code, entry points, and a quick-reference cheat sheet.
 
-5. [Testing and Mocking](./05-testing-and-mocking.md)
-   pytest, fixtures, parameterized tests, and modern mocking with `unittest.mock` and `pytest-mock`.
-
-6. [Object-Oriented Python](./06-object-oriented-python.md)
+5. [Object-Oriented Python](./05-object-oriented-python.md)
    Classes, visibility, dataclasses, decorators, type hints, and inheritance — what's different from Java/C#.
+
+6. [Testing and Mocking](./06-testing-and-mocking.md)
+   pytest, fixtures, parameterized tests, testing classes, and modern mocking with
+   `unittest.mock` and `pytest-mock`.

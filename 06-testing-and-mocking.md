@@ -243,6 +243,98 @@ def test_currencies(currency): ...
 Prefer this over a `for` loop inside one test: a loop stops at the first failure and reports
 one result, while parametrize runs every case and names the ones that broke.
 
+## Testing Classes
+
+Everything so far applies to functions. The [previous chapter](./05-object-oriented-python.md)
+covered Python's object model — here is how those features change the way you write tests.
+
+### Dataclasses Make Assertions One Line
+
+A `@dataclass` generates `__eq__` that compares **field values**, not identity. That turns a
+pile of field-by-field assertions into a single one:
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class Receipt:
+    order_id: str
+    total: int
+    currency: str
+```
+
+```python
+def test_receipt():
+    got = build_receipt(order_id="A-1", amount=750)
+
+    # Instead of three assertions that stop at the first failure:
+    assert got == Receipt(order_id="A-1", total=750, currency="EUR")
+```
+
+When it fails, pytest diffs the two objects and shows you exactly which field differs — you
+get the full picture in one run rather than fixing one field at a time.
+
+This is worth knowing precisely because the opposite is a silent trap. A **plain** class
+without `__eq__` falls back to identity comparison, so two objects with identical contents are
+never equal:
+
+```python
+class Receipt:                                  # no @dataclass
+    def __init__(self, order_id, total):
+        self.order_id, self.total = order_id, total
+
+assert Receipt("A-1", 750) == Receipt("A-1", 750)   # fails — different objects
+```
+
+The failure message is baffling the first time, because both sides print the same values. If
+you want value equality, use `@dataclass` (or write `__eq__`).
+
+### Build Variants with `dataclasses.replace`
+
+Rather than a fixture per scenario, define one valid baseline and derive from it. `replace`
+returns a **new** object with some fields swapped, which works on `frozen=True` dataclasses
+too:
+
+```python
+from dataclasses import replace
+
+@pytest.fixture
+def config():
+    return ConnectionConfig(endpoint="https://test", username="admin", password="secret")
+
+def test_rejects_empty_username(config):
+    with pytest.raises(ValueError):
+        connect(replace(config, username=""))
+```
+
+The test states only what makes it different from a valid baseline, so adding a required field
+to `ConnectionConfig` later means updating one fixture instead of thirty literals.
+
+### Grouping Tests in Classes
+
+pytest collects methods on classes named `Test*`. This is purely organizational — no
+inheritance, no base class, and **no `__init__` method** (pytest skips classes that define
+one):
+
+```python
+class TestGraphService:
+    @pytest.fixture
+    def service(self):
+        return GraphService(endpoint="https://test")
+
+    def test_queries_the_endpoint(self, service):
+        assert "https://test" in service.get_graph("q")
+
+    def test_rejects_an_empty_query(self, service):
+        with pytest.raises(ValueError):
+            service.get_graph("")
+```
+
+A fixture defined inside the class is visible only to that class — useful for narrowing scope
+without adding it to `conftest.py`. Don't store state on `self` between test methods, though:
+pytest creates a **new instance for every test**, so anything you set in one method is gone in
+the next. Share setup through fixtures, not attributes.
+
 ## Mocking
 
 ### The Vocabulary
@@ -357,6 +449,119 @@ anything.
 One caveat: autospec inspects the class, so attributes created dynamically in `__init__` are
 not part of the spec. For those, use `mocker.patch.object` on the instance.
 
+### Mocking Classes and Their Members
+
+Patching a single method is the common case, and `patch.object` targets it directly:
+
+```python
+def test_get_graph_is_stubbed(mocker):
+    mocker.patch.object(GraphService, "get_graph", autospec=True, return_value="stubbed")
+
+    assert GraphService("https://real").get_graph("q") == "stubbed"
+```
+
+With `autospec=True` the mock receives `self` as its first argument, exactly like the real
+method — so `assert_called_once_with(service, "q")` includes the instance. Without autospec it
+doesn't, which is a frequent source of confusing assertion failures.
+
+#### Patching a Whole Class
+
+When the code under test constructs its own collaborator, you patch the class. The thing to
+internalize: **the object your code receives is `MockClass.return_value`**, because that is
+what calling the class returns.
+
+```python
+# src/my_app/reports.py
+from my_app.services import GraphService
+
+def run(endpoint: str) -> str:
+    return GraphService(endpoint).get_graph("q")
+```
+
+```python
+def test_run(mocker):
+    MockService = mocker.patch("my_app.reports.GraphService", autospec=True)
+    MockService.return_value.get_graph.return_value = "faked"
+
+    assert run("https://x") == "faked"
+
+    MockService.assert_called_once_with("https://x")           # the constructor call
+    MockService.return_value.get_graph.assert_called_once_with("q")   # the method call
+```
+
+Setting `MockService.return_value` gets you the instance; asserting on `MockService` itself
+checks how it was **constructed**. Mixing the two up is the usual reason a test insists a
+method was never called.
+
+#### Properties
+
+A `@property` is a class-level descriptor, so assigning to it on a real instance fails. Patch
+it on the class with `PropertyMock`:
+
+```python
+def test_endpoint(mocker):
+    endpoint = mocker.patch.object(
+        GraphService, "endpoint", new_callable=mocker.PropertyMock
+    )
+    endpoint.return_value = "https://faked"
+
+    assert GraphService("https://real").endpoint == "https://faked"
+```
+
+On an autospec **instance** mock the rule is different and simpler — the property is just an
+attribute there, so plain assignment works:
+
+```python
+service = mocker.create_autospec(GraphService, instance=True)
+service.endpoint = "https://faked"
+```
+
+#### Standalone Doubles with `create_autospec`
+
+You don't have to patch anything to get a correctly shaped object. `create_autospec` builds a
+double you can pass in, which pairs well with dependency injection:
+
+```python
+service = mocker.create_autospec(GraphService, instance=True)
+service.get_graph.return_value = "stubbed"
+
+assert build_report(service) == "stubbed"
+service.get_graph.assert_called_once_with("q")
+```
+
+`instance=True` says "this is an instance, not the class," so calling it like a constructor
+raises `TypeError` instead of quietly handing back another mock.
+
+This also solves abstract base classes. `BaseService(ABC)` can't be instantiated, and writing a
+throwaway subclass per test is noise:
+
+```python
+double = mocker.create_autospec(BaseService, instance=True)
+double.execute.return_value = "stubbed"
+```
+
+Add `spec_set=True` when you want assignment locked down too — it rejects setting attributes
+the real class doesn't have, catching typos like `service.get_grpah = ...` that a normal mock
+would happily accept.
+
+#### Context Managers and Other Dunders
+
+`Mock` does not implement dunder methods; `MagicMock` does. That is the whole practical
+difference between them, and it matters as soon as your code uses `with`, `len()`, `in`, or
+iteration:
+
+```python
+def test_uses_a_connection(mocker):
+    conn = mocker.MagicMock()
+    conn.__enter__.return_value.execute.return_value = ["row"]
+
+    assert fetch_rows(conn) == ["row"]
+```
+
+`mocker.patch` gives you a `MagicMock` by default, so this usually just works — but a bare
+`Mock()` you construct yourself will fail with a `TypeError` about the context manager
+protocol.
+
 ### Asserting on Calls
 
 ```python
@@ -449,8 +654,14 @@ def test_order_total_applies_the_rate():
 ```
 
 No patching, no import-path strings, and the test survives any refactor that keeps the
-behaviour. `Protocol` is structural typing — `FakeRates` satisfies it without inheriting from
-anything.
+behaviour.
+
+The [OO chapter](./05-object-oriented-python.md) noted that Python has no `interface` keyword —
+you use abstract classes or duck typing. `Protocol` is the third option, and the best one for
+test seams: it names a shape without requiring anyone to inherit from it. `FakeRates` satisfies
+`RateSource` purely by having a matching `fetch` method, so `mypy` checks the contract while
+your test class stays a plain object. An `ABC` would force both the real implementation and
+every fake to subclass it.
 
 **3. Don't mock what you don't own.** Wrapping a third-party client in your own thin adapter
 and faking the adapter means a library upgrade breaks one class, not fifty tests.
@@ -551,6 +762,13 @@ def test_with_mock(mocker):
     m = mocker.patch("module.where.it.is_USED", autospec=True, return_value=1.5)
     ...
     m.assert_called_once_with("EUR")
+
+# --- classes ---
+assert got == Receipt("A-1", 750)                     # dataclass __eq__ compares fields
+mocker.patch.object(Cls, "method", autospec=True)     # one method
+MockCls = mocker.patch("mod.Cls", autospec=True)      # whole class...
+MockCls.return_value.method.return_value = "x"        # ...instance is .return_value
+mocker.create_autospec(Cls, instance=True)            # standalone double, no patching
 ```
 
 Three rules to carry away: **patch where the name is used, not where it's defined**; **always
@@ -558,5 +776,5 @@ pass `autospec=True`**; and **prefer a fake you inject over a mock you patch**.
 
 ---
 
-Previous: [Running Your Application](./04-running-your-application.md) |
-Next: [Object-Oriented Python](./06-object-oriented-python.md)
+Previous: [Object-Oriented Python](./05-object-oriented-python.md) |
+Back to [Index](./tutorial.md)

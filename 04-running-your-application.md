@@ -165,4 +165,4 @@ rm -rf .venv && uv sync        # Nuclear option: recreate venv from scratch
 ---
 
 Previous: [Project Configuration](./03-project-configuration.md) |
-Next: [Testing and Mocking](./05-testing-and-mocking.md)
+Next: [Object-Oriented Python](./05-object-oriented-python.md)
