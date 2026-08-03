@@ -30,6 +30,9 @@ my-project/
 │   ├── lib/                # Installed packages live here
 │   └── pyvenv.cfg          # Metadata (which Python version, etc.)
 ├── src/                    # Your source code
+│   └── my_app/             # The importable package (import my_app)
+│       ├── __init__.py     # Marks the directory as a package
+│       └── main.py
 └── pyproject.toml          # Project manifest
 ```
 

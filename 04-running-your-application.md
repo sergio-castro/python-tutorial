@@ -18,7 +18,7 @@ if __name__ == "__main__":
 `__name__` is a built-in variable that Python sets automatically for every module:
 
 - **When you run the file directly** (`python hello_world.py`) → `__name__` is `"__main__"`
-- **When the file is imported** (`from src.hello_world import say_hello`) → `__name__` is `"src.hello_world"`
+- **When the file is imported** (`from my_app.hello_world import say_hello`) → `__name__` is `"my_app.hello_world"`
 
 So the `if` block means: "only execute this code when the file is run directly, not when
 it's imported by something else." Without it, importing a function from the file would
@@ -39,7 +39,7 @@ Now that you understand the guard, here are the three ways to actually run a Pyt
 ### Option A: `uv run` (Recommended)
 
 ```bash
-uv run python src/hello_world.py
+uv run python src/my_app/hello_world.py
 ```
 
 `uv run` automatically uses the project's virtual environment without requiring activation.
@@ -58,7 +58,7 @@ source .venv/bin/activate
 # (my-app) $
 
 # Step 2: Now 'python' refers to the venv's Python, not the system one
-python src/hello_world.py
+python src/my_app/hello_world.py
 
 # Step 3: When done, deactivate
 deactivate
@@ -74,7 +74,7 @@ points to.
 ### Option C: Call the Venv's Python Directly
 
 ```bash
-.venv/bin/python src/hello_world.py
+.venv/bin/python src/my_app/hello_world.py
 ```
 
 This bypasses activation entirely by using the full path to the interpreter. It's useful
@@ -84,11 +84,11 @@ If `uv` is available, Option A is always preferable, including in CI/CD pipeline
 
 ### Summary
 
-| Method                                  | Requires activation? | Best for                |
-|-----------------------------------------|----------------------|-------------------------|
-| `uv run python src/hello_world.py`     | No                   | Day-to-day development  |
-| `source .venv/bin/activate` + `python` | Yes (once per shell) | Interactive shell work  |
-| `.venv/bin/python src/hello_world.py`  | No                   | Scripts, CI, Docker     |
+| Method                                       | Requires activation? | Best for               |
+|----------------------------------------------|----------------------|------------------------|
+| `uv run python src/my_app/hello_world.py`    | No                   | Day-to-day development |
+| `source .venv/bin/activate` + `python`       | Yes (once per shell) | Interactive shell work |
+| `.venv/bin/python src/my_app/hello_world.py` | No                   | Scripts, CI, Docker    |
 
 ## Entry Points: CLI Commands
 
@@ -100,11 +100,11 @@ section in `pyproject.toml` maps command names to Python functions:
 
 ```toml
 [project.scripts]
-my-app = "src.hello_world:say_hello"
+my-app = "my_app.hello_world:say_hello"
 ```
 
 This means: "create a command called `my-app` that calls `say_hello()` from
-`src/hello_world.py`."
+`src/my_app/hello_world.py`."
 
 When you run `uv sync`, a small wrapper script is generated at `.venv/bin/my-app`.
 You can then run it with:
@@ -123,9 +123,9 @@ in a different file:
 
 ```toml
 [project.scripts]
-my-app       = "src.hello_world:say_hello"
-post-request = "src.post_request:main"
-dashboard    = "src.dashboard:main"
+my-app       = "my_app.hello_world:say_hello"
+post-request = "my_app.post_request:main"
+dashboard    = "my_app.dashboard:main"
 ```
 
 This is the same mechanism behind tools like `pytest`, `flask`, `black`, and even `pip`
@@ -147,15 +147,15 @@ uv add requests                # Add a package (like npm install --save)
 uv add --dev pytest            # Add a dev-only dependency
 
 # --- Running code ---
-uv run python src/hello_world.py  # Run a script directly
-uv run my-app                     # Run a CLI entry point
-uv run pytest                     # Run tests
+uv run python src/my_app/hello_world.py  # Run a script directly
+uv run my-app                            # Run a CLI entry point
+uv run pytest                            # Run tests
 
 # --- Manual venv activation (alternative to uv run) ---
-source .venv/bin/activate      # Activate
-python src/hello_world.py      # Run with plain python
-my-app                         # Run CLI entry point
-deactivate                     # Deactivate when done
+source .venv/bin/activate         # Activate
+python src/my_app/hello_world.py  # Run with plain python
+my-app                            # Run CLI entry point
+deactivate                        # Deactivate when done
 
 # --- Housekeeping ---
 uv sync                        # Regenerate entry points after editing [project.scripts]
