@@ -6,14 +6,21 @@ call tools — using [deepagents](https://pypi.org/project/deepagents/) and
 run this example:
 
 ```python
+import os
 from deepagents import create_deep_agent
+from langchain_anthropic import ChatAnthropic
 
 def get_weather(city: str) -> str:
     """Get weather for a given city."""
     return f"It's always sunny in {city}!"
 
+model = ChatAnthropic(
+    model="claude-sonnet-4-6",
+    api_key=os.environ["CLAUDE_API_KEY"],
+)
+
 agent = create_deep_agent(
-    model="anthropic:claude-sonnet-4-6",
+    model=model,
     tools=[get_weather],
     system_prompt="You are a helpful assistant",
 )
@@ -22,6 +29,11 @@ agent.invoke(
     {"messages": [{"role": "user", "content": "what is the weather in sf"}]}
 )
 ```
+
+> **API key:** like the rest of this project's labs, this one reads the key from a
+> **custom-named** variable (`CLAUDE_API_KEY`) in code, rather than the SDK's default
+> `ANTHROPIC_API_KEY`. The [Call Claude lab](../claude/README.md) shows *both* styles side by
+> side; [API Keys & Billing](../claude/api-keys.md) explains why a distinct name is used.
 
 > If you just want a **single, direct call to Claude** (a prompt and a key, no agent
 > framework), start with the simpler [Call Claude](../claude/README.md) lab first.
@@ -125,28 +137,28 @@ weather-agent/
 
 ## 4. Set Your API Key
 
-The example calls an Anthropic model, so it needs an API key. `langchain-anthropic` reads
-it from the `ANTHROPIC_API_KEY` environment variable. Get a key from the
+The example reads your key from the `CLAUDE_API_KEY` environment variable (see the note at
+the top of this lab for why a custom name). Get a key from the
 [Anthropic Console](https://console.anthropic.com/settings/keys), then export it in your
 terminal:
 
 ```bash
 # macOS / Linux
-export ANTHROPIC_API_KEY="sk-ant-..."
+export CLAUDE_API_KEY="sk-ant-..."
 ```
 
 ```powershell
 # Windows (PowerShell)
-$env:ANTHROPIC_API_KEY="sk-ant-..."
+$env:CLAUDE_API_KEY="sk-ant-..."
 ```
 
-> The `export`/`$env:` form only lasts for the current terminal session. For a persistent
-> setup, add the key to a `.env` file or your shell profile — but **never commit the key
-> to git**.
+> The `export`/`$env:` form only lasts for the current terminal session, and you should
+> **never commit the key to git**. The code in step 5 reads this variable explicitly —
+> `langchain-anthropic` would otherwise only look for `ANTHROPIC_API_KEY`.
 >
-> If your key lives in a **differently-named** variable (e.g. you renamed it to avoid a
-> Claude Code billing collision), or you're unsure how API-key vs subscription billing
-> works, see [API Keys & Billing](../claude/api-keys.md).
+> ⚠️ Don't work around it with `export ANTHROPIC_API_KEY="$CLAUDE_API_KEY"` — that re-creates
+> the standard name and can pull Claude Code onto API billing (see
+> [API Keys & Billing](../claude/api-keys.md)).
 
 ---
 
@@ -156,14 +168,22 @@ Replace the contents of `main.py` with the agent. This is the example from the t
 page, plus a small addition at the bottom so running it actually prints the answer:
 
 ```python
+import os
 from deepagents import create_deep_agent
+from langchain_anthropic import ChatAnthropic
 
 def get_weather(city: str) -> str:
     """Get weather for a given city."""
     return f"It's always sunny in {city}!"
 
+# Read the key from YOUR variable and pass it to the model explicitly.
+model = ChatAnthropic(
+    model="claude-sonnet-4-6",
+    api_key=os.environ["CLAUDE_API_KEY"],
+)
+
 agent = create_deep_agent(
-    model="anthropic:claude-sonnet-4-6",
+    model=model,
     tools=[get_weather],
     system_prompt="You are a helpful assistant",
 )
@@ -182,17 +202,21 @@ A few things worth knowing for someone new to Python:
 - **The `"""..."""` line under `get_weather`** is a *docstring*. It's not just a comment —
   `deepagents` sends it to the model as the tool's description, so the model knows what the
   tool does. Keep it meaningful.
-- **`model="anthropic:claude-sonnet-4-6"`** uses the `provider:model-id` format. You can
-  swap the model id (e.g. `anthropic:claude-opus-4-8` for the most capable model, or
-  `anthropic:claude-haiku-4-5` for the fastest/cheapest). The `anthropic:` prefix is what
-  routes it through `langchain-anthropic`.
+- **`ChatAnthropic(model="claude-sonnet-4-6", api_key=...)`** builds the model object
+  explicitly. Passing an object (rather than the string `"anthropic:claude-sonnet-4-6"`) is
+  what lets us inject a custom-named key. Note the model id here has **no `anthropic:`
+  prefix** — that prefix is only for the string form. Swap the id for `claude-opus-4-8`
+  (most capable) or `claude-haiku-4-5` (fastest/cheapest) as needed.
+- **`api_key=os.environ["CLAUDE_API_KEY"]`** reads your variable and hands it to the client.
+  If it isn't set, this raises `KeyError` — set it in step 4 first.
 
 ---
 
 ## 6. Run It
 
 Use `uv run` — it executes the file inside the project's virtual environment automatically,
-so you never have to "activate" anything:
+so you never have to "activate" anything (it also inherits your shell's environment, so it
+sees `CLAUDE_API_KEY`):
 
 ```bash
 uv run main.py
@@ -218,7 +242,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 uv init weather-agent               # Create project structure
 cd weather-agent
 uv add deepagents langchain-anthropic   # Add dependencies (creates .venv + uv.lock)
-export ANTHROPIC_API_KEY="sk-ant-..."   # Provide credentials
+export CLAUDE_API_KEY="sk-ant-..."      # Provide credentials (custom-named key)
 uv run main.py                      # Run your code
 ```
 
@@ -229,7 +253,8 @@ uv run main.py                      # Run your code
 | Symptom | Fix |
 |---------|-----|
 | `uv: command not found` | Open a new terminal so the updated `PATH` loads, or re-run the install script. |
-| `ANTHROPIC_API_KEY` error / auth failure | The key isn't set in the current terminal. Re-run the `export`/`$env:` command (step 4), or see [API Keys & Billing](../claude/api-keys.md). |
+| `KeyError: 'CLAUDE_API_KEY'` | The variable isn't set in the current terminal. Re-run the `export`/`$env:` command (step 4). |
+| `AuthenticationError` | The variable is set but the key is wrong/expired. Check it in the [Console](https://console.anthropic.com/settings/keys). |
 | `ModuleNotFoundError: No module named 'deepagents'` | You ran `python main.py` instead of `uv run main.py`, so the venv wasn't used. Use `uv run`. |
 | Want a specific Python version | `uv python install 3.12` then `uv venv --python 3.12`. |
 
