@@ -236,9 +236,14 @@ my-app/
 └── pyproject.toml
 ```
 
-The `src/` prefix is stripped at build time — it never appears in an import. Without this
-setting, hatchling looks for a directory matching the project name at the top level, which
-doesn't exist in a `src/` layout.
+The `src/` prefix is stripped at build time — it never appears in an import.
+
+**You can often omit this setting.** Hatchling looks for both `my_app/` and `src/my_app/` on
+its own, matching against the project name with hyphens converted to underscores. You need
+`packages` explicitly when the import name differs from the distribution name, when you ship
+more than one top-level package, or when the code lives somewhere non-standard. Many projects
+still write it out anyway — it documents the layout and it won't break if the distribution is
+renamed later.
 
 Note that `[tool.<name>]` is a namespace reserved for one specific tool. This block is read
 only by hatchling; other build backends configure the same thing with different keys. The
@@ -272,6 +277,106 @@ Because one installed distribution can expose more than one top-level import nam
 projects have exactly one entry, but the plural case is real: the `attrs` distribution ships
 both `import attr` and `import attrs`, and `setuptools` ships both `setuptools` and
 `pkg_resources`.
+
+## Creating a Project: Application or Library?
+
+Everything above describes what a `pyproject.toml` *contains*. `uv init` generates one for
+you — but **which** one depends on a flag, and the default is not what you want for a library.
+
+The question uv is really asking is: **is this project a package?** Will anyone install it and
+`import` it — or do you only ever run it?
+
+| Command                               | Layout         | `[build-system]`?         | Use for                         |
+|---------------------------------------|----------------|---------------------------|---------------------------------|
+| `uv init my-app` (default, = `--app`) | flat `main.py` | no                        | scripts and apps you only run   |
+| `uv init --app --package my-app`      | `src/my_app/`  | yes + `[project.scripts]` | apps installed as a CLI command |
+| **`uv init --lib my-lib`**            | `src/my_lib/`  | yes                       | **libraries and SDKs**          |
+
+### Why the Default Has No `src/`
+
+`uv init` defaults to `--app`, and an application is not a package. Look at what it generates:
+
+```toml
+[project]
+name = "my-app"
+version = "0.1.0"
+requires-python = ">=3.13"
+dependencies = []
+```
+
+There is **no `[build-system]`** — the section that says "here is how to build this project."
+Nothing gets built, nothing gets installed, so there is no import name and nothing for `src/`
+to protect. You get a plain `main.py` and run it with `uv run main.py`. For a throwaway
+script, that is exactly right, and adding `src/` would be pure ceremony.
+
+The moment you want `import my_app` to work — in your tests, in another project, for anyone
+who installs your package — the project has to *be* a package. That's `--lib`.
+
+### What `uv init --lib` Generates
+
+```bash
+uv init --lib my-lib
+```
+
+```
+my-lib/
+├── pyproject.toml          # now includes [build-system]
+├── README.md
+├── .python-version
+└── src/
+    └── my_lib/             # hyphen → underscore, done for you
+        ├── __init__.py
+        └── py.typed
+```
+
+Note that uv converted `my-lib` into `my_lib` by itself — the distribution-name-vs-import-name
+rule from earlier in this chapter, applied automatically.
+
+### Choosing the Build Backend
+
+`uv init --lib` writes uv's own backend:
+
+```toml
+[build-system]
+requires = ["uv_build>=0.11,<0.12"]
+build-backend = "uv_build"
+```
+
+To get the `hatchling` setup this chapter uses instead:
+
+```bash
+uv init --lib --build-backend hatch my-lib
+```
+
+Both are standard build backends — `pip install .` works either way, with or without uv
+installed. `hatchling` is the more widely recognized choice and the safer default for a
+package other people will contribute to; `uv_build` is a fine choice if your team is already
+committed to uv. The flag also accepts `flit`, `pdm`, `poetry`, `setuptools`, `maturin`, and
+`scikit`.
+
+### What Is `py.typed`?
+
+An empty marker file. Its *existence* is the entire message: it tells type checkers
+**"this package ships type hints — trust them."**
+
+[Type hints](./05-object-oriented-python.md) are ignored at runtime, and by default a type
+checker also ignores them across a package boundary. Without `py.typed`, `mypy` running in
+someone else's project treats everything you export as untyped, no matter how carefully you
+annotated it:
+
+```python
+from my_lib import connect
+
+connect(42)        # wrong argument type — mypy stays silent without py.typed
+```
+
+Add the file and that same check reports the error. This is
+[PEP 561](https://peps.python.org/pep-0561/), and it's why `uv init --lib` creates it for you:
+a library without it is invisible to its users' type checkers.
+
+Two things to remember: the file stays **empty forever** — it's a flag, not a config file —
+and it must be **included in the built package**. Hatchling and `uv_build` both ship it
+automatically; if you ever hand-roll packaging, check that it made it into the wheel.
 
 ## Historical Context
 

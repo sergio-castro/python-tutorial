@@ -135,7 +135,8 @@ itself — they are all entry point scripts generated during installation.
 
 ```bash
 # --- Starting a new project ---
-uv init my-app                 # Create a new project (like npm init)
+uv init --lib my-app           # Library/SDK: creates src/my_app/ + [build-system]
+uv init my-app                 # App/script: flat main.py, not a package
 cd my-app
 uv sync                        # Create venv + install dependencies
 
