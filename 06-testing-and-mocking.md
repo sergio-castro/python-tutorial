@@ -777,4 +777,4 @@ pass `autospec=True`**; and **prefer a fake you inject over a mock you patch**.
 ---
 
 Previous: [Object-Oriented Python](./05-object-oriented-python.md) |
-Back to [Index](./tutorial.md)
+Next: [Packaging and Deployment](./07-packaging-and-deployment.md)

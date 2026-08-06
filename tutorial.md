@@ -32,3 +32,7 @@ exercises (start with [Hello World](./labs/hello-world/README.md)).
 6. [Testing and Mocking](./06-testing-and-mocking.md)
    pytest, fixtures, parameterized tests, testing classes, and modern mocking with
    `unittest.mock` and `pytest-mock`.
+
+7. [Packaging and Deployment](./07-packaging-and-deployment.md)
+   Wheels and sdists, building with `uv build`, and publishing to a private registry
+   (JFrog) from a GitHub Actions pipeline.
