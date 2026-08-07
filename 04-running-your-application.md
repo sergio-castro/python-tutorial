@@ -141,7 +141,10 @@ cd my-app
 uv sync                        # Create venv + install dependencies
 
 # --- Cloning an existing project ---
-uv sync                        # Create venv (if needed) + install all dependencies
+uv sync                        # Base deps + the dev group; no extras
+uv sync --all-extras           # ...plus every extra
+uv sync --no-dev               # Runtime only, no dev tooling
+uv sync --locked --all-extras  # CI: fail if uv.lock is stale
 
 # --- Adding dependencies ---
 uv add requests                # Add a package (like npm install --save)

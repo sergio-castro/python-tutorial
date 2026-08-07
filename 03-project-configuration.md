@@ -184,6 +184,8 @@ dev = ["pytest>=8.0", "ruff>=0.6"]
 
 `uv sync` installs the `dev` group by default; `uv sync --no-dev` skips it. Older projects
 predate PEP 735 and put dev tools in an extra named `dev`, so you will see both in the wild.
+[Installing What You Declared](#installing-what-you-declared-uv-sync) later in this chapter
+covers the full set of flags for selecting extras and groups at install time.
 
 **Rule of thumb:** if a *consumer* of your package might want it, make it an extra. If only a
 *contributor* to your package needs it, make it a dependency group.
@@ -377,6 +379,103 @@ a library without it is invisible to its users' type checkers.
 Two things to remember: the file stays **empty forever** — it's a flag, not a config file —
 and it must be **included in the built package**. Hatchling and `uv_build` both ship it
 automatically; if you ever hand-roll packaging, check that it made it into the wheel.
+
+## Installing What You Declared: `uv sync`
+
+`pyproject.toml` is a description. `uv sync` is what makes `.venv/` match it. One command does
+four things:
+
+1. Creates `.venv/` if it doesn't exist, using a Python that satisfies `requires-python`
+2. Resolves dependencies and writes `uv.lock` (or reuses it if it's current)
+3. Installs those locked dependencies
+4. Installs **your own project** into the venv, in editable mode
+
+Step 4 is easy to overlook and matters a lot: it's what makes `import my_app` work in your
+tests. [Testing and Mocking](./06-testing-and-mocking.md) depends on it. It only happens if
+your project has a `[build-system]` — an `--app` project without one skips this step, because
+there's nothing to install.
+
+### Sync Is Exact
+
+`uv sync` doesn't just install what's missing — it also **removes what shouldn't be there**:
+
+```bash
+uv sync --all-extras     # installs openpyxl and reportlab
+uv sync                  # removes them again
+```
+
+That's not a bug. It means the venv can't silently accumulate a package you installed by hand
+three weeks ago and now unknowingly depend on. The environment always reflects the manifest.
+Pass `--inexact` if you need to keep unrelated packages around.
+
+### Choosing Extras and Groups
+
+By default, `uv sync` installs your base `dependencies` plus the **default dependency groups**
+— which means `dev`. It installs **no extras**.
+
+| Flag                  | What you get                                                 |
+|-----------------------|--------------------------------------------------------------|
+| *(none)*              | Base `dependencies` + default groups (`dev`). **No extras.** |
+| `--extra excel`       | …plus the `excel` extra                                      |
+| `--all-extras`        | …plus every declared extra                                   |
+| `--no-extra pdf`      | Alongside `--all-extras`, skip just that one                 |
+| `--group docs`        | …plus the `docs` group, **added to** the defaults            |
+| `--all-groups`        | Every declared group                                         |
+| `--only-group docs`   | That group and nothing else                                  |
+| `--no-dev`            | Drop the `dev` group                                         |
+| `--no-default-groups` | Drop every default group — base dependencies only            |
+
+Note that `--group` is **additive**. `uv sync --group docs` gives you `docs` *and* `dev`, not
+`docs` instead of `dev`.
+
+### Reading `uv sync --all-extras --group dev`
+
+You'll see this command in CI configs and contributor guides. Decoding it:
+
+- **`--all-extras`** — install every extra. For the SDK from earlier in this chapter, that's
+  `guardian`, `guardian-langchain`, `guardian-langgraph`, and the rest, so a test run can
+  exercise every optional code path.
+- **`--group dev`** — install the `dev` group, which holds `pytest`, `ruff`, `mypy`.
+
+Here's the catch: **`--group dev` does nothing.** `dev` is a *default* group — `uv sync`
+already installs it. The command is equivalent to plain `uv sync --all-extras`.
+
+That's not a mistake worth correcting. Naming the group states the intent explicitly, and it
+becomes load-bearing the moment a project overrides the defaults:
+
+```toml
+[tool.uv]
+default-groups = []      # now nothing is installed unless asked for by name
+```
+
+With that in place, `--group dev` is doing real work.
+
+### Extras Opt In, Groups Opt Out
+
+The asymmetry is worth internalizing, because it trips people up:
+
+|                            | Default         | Flag to change it                  |
+|----------------------------|-----------------|------------------------------------|
+| **Extras**                 | ❌ Not installed | `--extra` / `--all-extras`         |
+| **Default groups** (`dev`) | ✅ Installed     | `--no-dev` / `--no-default-groups` |
+
+It follows from who each one is for — the consumer-versus-contributor rule from earlier.
+**Extras serve consumers**, and uv can't guess which ones you want, so it installs none.
+**Groups serve contributors**, and running `uv sync` in a checkout means you *are* one, so
+your tooling arrives without being asked for.
+
+### In CI
+
+Add `--locked` on a build server. It makes `uv sync` fail rather than silently re-resolve when
+`uv.lock` is out of date with `pyproject.toml` — so CI tests the exact versions you committed,
+and a stale lockfile becomes a red build instead of a mystery:
+
+```bash
+uv sync --locked --all-extras
+```
+
+See [Packaging and Deployment](./07-packaging-and-deployment.md) for where this fits in a
+pipeline.
 
 ## Historical Context
 
