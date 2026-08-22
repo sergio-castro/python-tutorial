@@ -85,17 +85,32 @@ agent = create_deep_agent(
 their contents are loaded into the system prompt in full, on every run. The convention is
 [`AGENTS.md`](https://agents.md/).
 
-Three consequences worth internalising:
+### Why a file, and not just text?
 
-- **Paths, so the backend decides persistence.** `/memories/AGENTS.md` routed to a `StoreBackend`
-  survives across conversations; the same path on a plain `StateBackend` does not. This is the
-  entire subject of [Backends, State, and Memory](./01-backends-and-memory.md).
-- **Always loaded means always paid for.** Memory costs tokens on every request whether or not
-  it is relevant. Keep it to things that genuinely apply everywhere: project conventions, user
-  preferences, guidelines you want honoured unconditionally.
-- **The agent can write to it.** These are ordinary files, so the agent's `edit_file` tool can
-  update them — that is how an agent "learns" a preference and still knows it tomorrow. Whether
-  it *may* is a permissions question, not a memory one.
+The content ends up inline in the system prompt anyway, so the indirection looks pointless until
+you ask what the alternatives cannot do. A literal string in your source is fixed forever. A
+message posted into the history dies with the thread and can be summarized away. A file avoids
+both, and the reason is simple: **memory has to outlive the conversation, and the message history
+*is* the conversation.**
+
+Four things follow from it being a file:
+
+- **The backend decides persistence and scope.** `/memories/AGENTS.md` routed to a `StoreBackend`
+  survives across conversations and can be scoped per user; the same path on a plain
+  `StateBackend` does not survive at all. That is the whole subject of
+  [Backends, State, and Memory](./01-backends-and-memory.md).
+- **The agent can change it.** `edit_file` works on memory files like any other, which is how an
+  agent records a preference and still has it next week. Whether it *may* is a permissions
+  question, not a memory one.
+- **It survives compaction.** Being re-injected into the system prompt every turn, it is never at
+  risk of being summarized away. Real and useful, though a consequence of the design rather than
+  the motivation for it.
+- **Other agents can read it.** Subagents, later threads, and anything else sharing the store
+  namespace see the same file.
+
+The cost of all this is that **always loaded means always paid for**: memory is billed on every
+request whether or not it is relevant. Keep it to things that genuinely apply everywhere —
+project conventions, user preferences, guidelines you want honoured unconditionally.
 
 ## 3. `skills=` — procedures loaded on demand
 
@@ -154,10 +169,28 @@ summarizer with everything else, and what remains is whatever a summary of sessi
 artifacts, and next steps happens to retain. Step-by-step procedural detail is not guaranteed to
 survive that.
 
-The agent is not stranded, though, because **skill descriptions live in the system prompt, which
-is never summarized**. After compaction it still knows the skill exists and what it is for, so it
-can simply read it again. The cost of that is paying for the body a second time — which is one
-more reason to keep it small.
+**Nothing reloads it for you.** There is no re-activation step: the harness does not notice that a
+skill was compacted away, and the agent carries on with whatever the summary left behind. If it
+needs the procedure again, the full text comes back only when the agent calls `read_file` on the
+skill itself — which it can always do, since the file is untouched on the backend and its
+description is still in the system prompt.
+
+Whether it *will* is a judgement the model makes. That is the risk worth naming: after compaction
+the agent may hold a confident-sounding paraphrase of a detailed procedure and act on that rather
+than re-reading. Nothing marks the summary as lossy.
+
+Four ways to keep a complex skill safe, roughly in order of how much they help:
+
+- **Compact between tasks, not during one.** `create_summarization_tool_middleware` gives the
+  agent a `compact_conversation` tool so it can compress at a natural boundary instead of
+  mid-procedure.
+- **Raise `keep`** so a recently activated skill stays inside the verbatim window
+  ([Managing the Context Window](./05-context-window.md)).
+- **Keep `SKILL.md` short and push detail into `references/`.** A short body is cheap to re-read,
+  and a one-line instruction to consult a reference file is far more likely to survive
+  summarization than the reference content itself.
+- **If something must never be lost, it is not a skill.** Put it in memory, which lives in the
+  system prompt and is immune to compaction.
 
 ### Anatomy
 
