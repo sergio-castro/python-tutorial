@@ -127,6 +127,25 @@ reading more files.
 So the cost of *having* a skill is its frontmatter. The cost of *using* one is its body. You can
 attach many skills to an agent cheaply, which is the whole design.
 
+### Activation is one-way
+
+Nothing unloads a skill once it has been read. Level 2 happens through `read_file`, so the body
+arrives as an ordinary **tool result in the message history** — and stays there for the rest of
+the thread, resent with every subsequent request, exactly like any other tool result.
+
+Progressive disclosure therefore saves you the cost of skills you *never* use. It does not save
+you the cost of a skill after you have used it. Two things follow:
+
+- The body size is a **recurring** cost from activation onward, not a one-off read. That is the
+  real force behind the ~5,000-token guidance.
+- What eventually clears it is context compression, not the skill system:
+  [summarization](./05-context-window.md) once the window fills, or offloading if the body
+  somehow exceeded the 20,000-token threshold.
+
+If a procedure is genuinely enormous, keep `SKILL.md` thin and push the bulk into
+`references/`, which the agent reads only if the instructions send it there — and which it can
+read a piece at a time.
+
 ### Anatomy
 
 ```
@@ -390,6 +409,7 @@ to keep instructions available without keeping them resident.
 | Symptom | Cause |
 |--------------------------------------------|--------------------------------------------------------|
 | A skill is never picked up | Its `description` says what it does but not *when* to use it, or it overlaps another skill |
+| Context keeps growing after a skill ran | Activation is one-way — the body stays in history until compression removes it |
 | Skill fails to load at all | `name` in the frontmatter does not match the directory name |
 | Subagent ignores your main instructions | `system_prompt` does not inherit — it only knows what you gave it |
 | Subagent can't use a skill | Skills do not inherit; pass `skills` on the subagent (only `general-purpose` inherits) |

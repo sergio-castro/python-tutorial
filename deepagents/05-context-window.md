@@ -119,6 +119,12 @@ for chunk in agent.stream({"messages": [...]}, stream_mode="messages", version="
 
 Without this, users see a summary being written in the middle of their conversation.
 
+Do not confuse the two things at play. The **summary text** persists: it replaces the history and
+is resent on every subsequent request from then on — that is precisely what it is for. The
+**stream tokens** appear exactly once, while the summary is being written. Filtering them is a
+display concern, not a cost one; the cost is the summary itself, which is still far smaller than
+the history it replaced.
+
 ## Prompt Caching
 
 Prompt caching is about **cost and latency, not size**. The static head of your prompt — base
