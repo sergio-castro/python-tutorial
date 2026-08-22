@@ -85,6 +85,32 @@ agent = create_deep_agent(
 their contents are loaded into the system prompt in full, on every run. The convention is
 [`AGENTS.md`](https://agents.md/).
 
+### What "always loaded" means
+
+Not "appended to the conversation". Memory goes into the **system message**, which is rebuilt and
+re-sent on every request. It never becomes part of the message history.
+
+Three things follow, and they are the practical payoff of that choice:
+
+- **It is re-sent, not accumulated.** Each request carries the file's *current* contents. Edit
+  the file and the next request carries the new version, with no trace of the old one anywhere.
+  A correction posted into the history would leave the original sitting there, still being read.
+- **It cannot be summarized away.** Compaction rewrites history; the system message is assembled
+  fresh each turn. See [Managing the Context Window](./05-context-window.md).
+- **You pay for it every single turn**, relevant or not.
+
+Where in the system message? In the assembly order from
+[The Complete System Prompt](#the-complete-system-prompt), memory is **item 3** — after your own
+`system_prompt` and the built-in base prompt, and before the skills, filesystem, and subagent
+sections. So: near the front, but not the very front.
+
+One caveat before you build anything on that exact position. The harness deliberately runs its
+memory middleware **late** in the middleware stack, after the prompt-caching middleware,
+specifically so that editing a memory file is less likely to invalidate the cached prompt prefix.
+The composition order tells you the reading order the model sees; it is not a promise about byte
+offsets relative to the cache boundary. Rely on "memory is near the top of the system message and
+cheap to change", not on anything finer.
+
 ### Why a file, and not just text?
 
 The content ends up inline in the system prompt anyway, so the indirection looks pointless until
