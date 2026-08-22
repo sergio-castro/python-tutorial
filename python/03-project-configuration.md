@@ -179,7 +179,7 @@ Your users should never be able to install those. Modern projects use `[dependen
 
 ```toml
 [dependency-groups]
-dev = ["pytest>=8.0", "ruff>=0.6"]
+dev = ["pytest>=8.0", "ruff>=0.16"]
 ```
 
 `uv sync` installs the `dev` group by default; `uv sync --no-dev` skips it. Older projects
@@ -363,22 +363,45 @@ An empty marker file. Its *existence* is the entire message: it tells type check
 
 [Type hints](./05-object-oriented-python.md) are ignored at runtime, and by default a type
 checker also ignores them across a package boundary. Without `py.typed`, `mypy` running in
-someone else's project treats everything you export as untyped, no matter how carefully you
-annotated it:
+someone else's project won't look inside your package at all — however carefully you annotated
+it:
 
 ```python
 from my_lib import connect
 
-connect(42)        # wrong argument type — mypy stays silent without py.typed
+connect(42)        # never checked; mypy stopped at the import
 ```
 
-Add the file and that same check reports the error. This is
-[PEP 561](https://peps.python.org/pep-0561/), and it's why `uv init --lib` creates it for you:
-a library without it is invisible to its users' type checkers.
+```
+error: Skipping analyzing "my_lib": module is installed, but missing library stubs
+or py.typed marker  [import-untyped]
+```
 
-Two things to remember: the file stays **empty forever** — it's a flag, not a config file —
-and it must be **included in the built package**. Hatchling and `uv_build` both ship it
-automatically; if you ever hand-roll packaging, check that it made it into the wheel.
+Add the empty file, and the same run reports what you'd expect:
+
+```
+error: Argument 1 to "connect" has incompatible type "int"; expected "str"  [arg-type]
+```
+
+This is [PEP 561](https://peps.python.org/pep-0561/), and it's why `uv init --lib` creates it
+for you: a library without it is invisible to its users' type checkers.
+
+#### When It Matters
+
+| Situation | What it means for you |
+|-----------------------------------------------|------------------------------------------------------|
+| Publishing a library other people import | Ship it, or your annotations are decoration |
+| Writing an application or service | Ignore it — nothing imports you across a boundary |
+| A dependency gives you `[import-untyped]` | Not your bug: that library has no marker. Add its stub package if one exists (`uv add --dev types-requests`), or exempt that import in your mypy config |
+| You shipped it and users still see the error | The file never made it into the wheel |
+
+Two things to remember: the file stays **empty forever** — it's a flag, not a config file — and
+it must be **included in the built package**. Hatchling and `uv_build` both ship it
+automatically; if you ever hand-roll packaging, check the wheel
+([Packaging and Deployment](./08-packaging-and-deployment.md)).
+
+Shipping it is also a small promise: your hints become part of your public API, so a wrong one
+now breaks your users' builds, not just yours.
 
 ## Installing What You Declared: `uv sync`
 
@@ -474,7 +497,7 @@ and a stale lockfile becomes a red build instead of a mystery:
 uv sync --locked --all-extras
 ```
 
-See [Packaging and Deployment](./07-packaging-and-deployment.md) for where this fits in a
+See [Packaging and Deployment](./08-packaging-and-deployment.md) for where this fits in a
 pipeline.
 
 ## Historical Context

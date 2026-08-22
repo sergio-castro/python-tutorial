@@ -132,6 +132,54 @@ E        +  where 750 = line_total(250, 3)
 This is why Python has no equivalent of AssertJ or Hamcrest in common use — the language's
 own operators plus this rewriting cover it.
 
+### `assert` Is a Statement, Not a Function
+
+It takes two operands separated by a comma: the condition, and an optional message that is
+evaluated only when the condition is false.
+
+```python
+assert rate > 0, f"rate for {currency} must be positive, got {rate}"
+```
+
+`assert cond, msg` is exactly `if not cond: raise AssertionError(msg)`. pytest prints your
+message *and* the reconstructed expression, so add one only when the values alone don't
+identify which case broke — parameterized runs and loops over collected data are the usual
+reasons.
+
+Because it is a statement, not a call, the parentheses matter:
+
+```python
+assert (rate == expected, "wrong rate")    # ✗ always passes
+assert rate == expected, "wrong rate"      # ✓
+```
+
+The first line asserts a single two-element **tuple**, and a non-empty tuple is truthy, so it
+can never fail. pytest warns about this specific mistake; plain Python does not.
+
+To wrap a long message across lines, put the parentheses around the **message only**:
+
+```python
+assert got_rate == expected_rate, (
+    f"{currency}: fetched rate {got_rate} != "
+    f"expected {expected_rate}"
+)
+```
+
+There is one expression inside those parentheses, so they are grouping, not a tuple. The two
+adjacent string literals are joined by **implicit concatenation** — Python concatenates
+literals that sit next to each other, with no `+`. Two things to watch: a comma between them
+makes it a tuple again, and a missing trailing space in the first fragment silently produces
+`1.5 !=expected` in the output.
+
+### `assert` Is Not for Production Validation
+
+`python -O` (or `PYTHONOPTIMIZE=1`) removes every `assert` statement from the compiled
+bytecode. In tests that never happens, so `assert` is the right tool there. In library or
+application code it means an `assert` guarding a precondition can vanish in the environment
+you care about most — which is why `line_total` above raises `ValueError` instead of asserting.
+Use `assert` for "this cannot happen" invariants, and `raise` for anything a caller might
+actually get wrong.
+
 ### Expecting Exceptions
 
 ```python
@@ -748,6 +796,7 @@ import pytest
 
 def test_something():                          # discovery: test_*.py, test_*
     assert value == expected                   # plain assert; pytest explains failures
+    assert value == expected, "why it matters" # optional message — never wrap both in ()
 
 with pytest.raises(ValueError, match="regex"): ...   # expected exception
 assert result == pytest.approx(1.23)                 # float comparison
@@ -777,4 +826,4 @@ pass `autospec=True`**; and **prefer a fake you inject over a mock you patch**.
 ---
 
 Previous: [Object-Oriented Python](./05-object-oriented-python.md) |
-Next: [Packaging and Deployment](./07-packaging-and-deployment.md)
+Next: [Linting and Formatting](./07-linting-and-formatting.md)

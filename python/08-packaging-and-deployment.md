@@ -536,5 +536,5 @@ check out the code and install your tools before anything else.
 
 ---
 
-Previous: [Testing and Mocking](./06-testing-and-mocking.md) |
+Previous: [Linting and Formatting](./07-linting-and-formatting.md) |
 Back to [Index](./tutorial.md)

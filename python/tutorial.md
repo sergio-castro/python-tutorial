@@ -33,6 +33,10 @@ exercises (start with [Hello World](./labs/hello-world/README.md)).
    pytest, fixtures, parameterized tests, testing classes, and modern mocking with
    `unittest.mock` and `pytest-mock`.
 
-7. [Packaging and Deployment](./07-packaging-and-deployment.md)
+7. [Linting and Formatting](./07-linting-and-formatting.md)
+   Ruff — formatting vs linting, the `spotless:apply` equivalent, import ordering, unused
+   imports, and wiring it into your editor, pre-commit, and CI.
+
+8. [Packaging and Deployment](./08-packaging-and-deployment.md)
    Wheels and sdists, building with `uv build`, and publishing to a private registry
    (JFrog) from a GitHub Actions pipeline.
