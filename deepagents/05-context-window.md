@@ -71,6 +71,22 @@ fixed numbers above.
 There is also a safety net: if any model call raises `ContextOverflowError`, the agent immediately
 summarizes and retries with the summary plus recent preserved messages, rather than failing.
 
+### What it does not touch
+
+Summarization compresses the **message history**, and only that. The system prompt is reassembled
+on every turn from its parts, so everything in it arrives intact no matter how many times the
+conversation has been compacted:
+
+| Survives compaction untouched | At risk of being summarized away |
+|-------------------------------------|----------------------------------------|
+| Your `system_prompt` | Earlier user and assistant messages |
+| Memory files (`AGENTS.md`) | Tool calls and their results |
+| Skill names and descriptions | The body of an activated skill |
+| Tool schemas and descriptions | Anything else in the history |
+
+The right-hand column is one list, not several: the harness has no notion of "important" messages
+to protect. Whatever falls outside the recent window is handed to the summarizer together.
+
 ### Changing the thresholds
 
 Pass your own `SummarizationMiddleware`; an instance whose name matches a built-in **replaces** it

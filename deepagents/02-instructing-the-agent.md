@@ -146,6 +146,19 @@ If a procedure is genuinely enormous, keep `SKILL.md` thin and push the bulk int
 `references/`, which the agent reads only if the instructions send it there — and which it can
 read a piece at a time.
 
+**And when summarization does eventually fire?** The body is neither preserved nor deliberately
+dropped: no skill-specific handling is documented, and none is implied by the mechanism. The body
+is a tool result, so it is treated exactly like every other tool result. If it falls inside the
+recent window that compaction keeps, it survives verbatim; if it falls outside, it goes to the
+summarizer with everything else, and what remains is whatever a summary of session intent,
+artifacts, and next steps happens to retain. Step-by-step procedural detail is not guaranteed to
+survive that.
+
+The agent is not stranded, though, because **skill descriptions live in the system prompt, which
+is never summarized**. After compaction it still knows the skill exists and what it is for, so it
+can simply read it again. The cost of that is paying for the body a second time — which is one
+more reason to keep it small.
+
 ### Anatomy
 
 ```
