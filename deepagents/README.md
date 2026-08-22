@@ -21,6 +21,10 @@ LangGraph that ships with planning, a filesystem, subagents, and memory already 
    The two ways an agent runs code — sandbox backends (`execute`) and interpreters (`eval`) —
    what each reaches, and what isolation does and does not buy you.
 
+5. [Managing the Context Window](./05-context-window.md)
+   What the harness does automatically when context fills up: offloading, summarization, and
+   prompt caching — when each triggers, and the defaults.
+
 ---
 
 Back to [Index](../README.md)

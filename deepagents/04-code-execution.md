@@ -287,4 +287,5 @@ Sources: [Sandboxes](https://docs.langchain.com/oss/python/deepagents/sandboxes)
 [Overview](https://docs.langchain.com/oss/python/deepagents/overview).
 
 Previous: [Harness Profiles](./03-harness-profiles.md) |
+Next: [Managing the Context Window](./05-context-window.md) |
 Back to [Deep Agents](./README.md) | [Index](../README.md)

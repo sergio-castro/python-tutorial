@@ -4,17 +4,19 @@ A deep agent sees exactly one storage abstraction: a filesystem. It calls `ls`, 
 `write_file`, `edit_file`, `delete`, `glob`, and `grep`, and it has no idea what is on the other
 side. What *is* on the other side is the **backend**: the implementation those tools run against.
 
-Choosing a backend settles two independent things.
+Choosing a backend settles three things.
 
-- **Where files go**, and therefore who can read them and whether they survive. That is this
-  chapter.
+- **Where files go**, and therefore who can read them and whether they survive. That is most of
+  this chapter.
 - **Whether the agent can run code.** Sandbox and local-shell backends also provide an `execute`
   tool; the others do not. That is [Code Execution](./04-code-execution.md).
+- **What the agent is allowed to touch**, and where that gets enforced — see
+  [Access Control](#access-control) below.
 
-So "backend" is a broader idea than "storage" — it is the whole surface the agent's tools sit on.
-This chapter takes the storage half.
+So "backend" is a broader idea than "storage": it is the whole surface the agent's tools sit on.
 
-Two questions decide everything, and they are answered in two different places:
+Taking the storage part first, two questions decide everything, and they are answered in two
+different places:
 
 | Question | The answers | Chosen by |
 |----------------------------------------------------|----------------------------------|--------------------------------------------|
@@ -391,6 +393,48 @@ exfiltrate.
 
 Implement `BackendProtocol` to point the same filesystem tools at S3, a database, a remote filesystem,
 whatever you already run.
+
+## Access Control
+
+The third thing the backend settles. There are three layers, in different places:
+
+**Declarative path rules** are a `create_deep_agent` parameter, not a backend setting, and they
+are evaluated *before* the backend is called:
+
+```python
+from deepagents import FilesystemPermission
+
+agent = create_deep_agent(
+    model="anthropic:claude-sonnet-4-6",
+    backend=CompositeBackend(default=StateBackend(), routes={"/policies/": StoreBackend(...)}),
+    permissions=[
+        FilesystemPermission(operations=["write"], paths=["/policies/**"], mode="deny"),
+    ],
+)
+```
+
+**Backend-level boundaries** come with the backend you picked.
+`FilesystemBackend(virtual_mode=True)` confining paths under `root_dir` is the main one — and in
+the other direction, **declarative permissions do not apply to sandbox backends at all**, because
+a shell routes around them.
+
+**Policy hooks** cover what path rules cannot express: rate limiting, audit logging, content
+inspection. You subclass a backend, or wrap any backend, and enforce the rule in the method:
+
+```python
+class GuardedBackend(FilesystemBackend):
+    def write(self, file_path: str, content: str) -> WriteResult:
+        if file_path.startswith("/protected/"):
+            return WriteResult(error=f"Writes are not allowed under {file_path}")
+        return super().write(file_path, content)
+```
+
+Note that the refusal is **returned, not raised** — the agent sees it as a tool result and can
+react to it.
+
+That is why access control belongs in a chapter about backends. The simple rules are configured
+beside the backend, but anything stronger is implemented *inside* it, and the backend you chose
+decides whether the simple rules apply at all.
 
 ## Per-Thread vs Cross-Thread
 
