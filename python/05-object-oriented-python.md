@@ -101,10 +101,87 @@ config.endpoint = "other"  # raises FrozenInstanceError
 
 This is the same distinction you'd make between a Java `record` and a regular `class`.
 
+## Functions Are Values
+
+Before decorators, the idea they rest on: in Python a function is an ordinary object. You can
+assign it, store it in a list, pass it to another function, and return it from one.
+
+```python
+def double(n: int) -> int:
+    return n * 2
+
+f = double          # no parentheses — this is the function itself
+print(f(21))        # 42
+
+print(double(21))   # calling it
+print(double)       # <function double at 0x...> — the object
+```
+
+That distinction is the one to hold on to: **`double` is the function, `double()` runs it.** A
+missing or extra pair of parentheses is the most common mistake in this area, and it usually
+fails somewhere far away from the line that caused it.
+
+### `lambda`: a function without a name
+
+`lambda` is an **expression that creates a function**. It is not a keyword-driven constant, not a
+special type, and not a value being captured — it is a function object, written inline:
+
+```python
+lambda n: n * 2
+```
+
+Read it as: *"a function taking `n`, returning `n * 2`"*. Everything before the colon is the
+parameter list; the single expression after it is the return value, with no `return` keyword. It
+is exactly equivalent to a `def`:
+
+```python
+double = lambda n: n * 2
+
+def double(n):                    # identical in behaviour
+    return n * 2
+```
+
+The point is not brevity but **position**: a `lambda` can appear in the middle of an argument
+list, where a `def` cannot. So when a library asks you for a function, you can supply one on the
+spot instead of naming it first:
+
+```python
+names = ["Bruce", "alice", "Carla"]
+names.sort(key=lambda name: name.lower())     # sort case-insensitively
+```
+
+`key=` here is not receiving a value; it is receiving a function that `sort` will call once per
+element. That is the shape you will meet constantly in configuration APIs — you hand over a
+function, and the framework decides when to call it and what to pass in.
+
+Limits, by design: a lambda holds **one expression**, so no statements, no `if/else` blocks (the
+`a if cond else b` expression is fine), no loops, and no annotations. Anything longer wants a
+`def`, which also gets you a name in the traceback.
+
+For Java developers this is the same idea as `n -> n * 2`, and a named function passed by
+reference is `Foo::bar`. Python simply makes no distinction between the two: both are just the
+object.
+
+### Typing one
+
+A parameter that takes a function is annotated `Callable`:
+
+```python
+from collections.abc import Callable
+
+def apply_twice(f: Callable[[int], int], value: int) -> int:
+    return f(f(value))
+
+apply_twice(lambda n: n * 2, 5)     # 20
+```
+
+`Callable[[int], int]` reads as "takes one `int`, returns an `int`" — the equivalent of Java's
+`Function<Integer, Integer>`.
+
 ## Decorators: The `@` Syntax
 
-If you haven't seen it before, `@dataclass` is a **decorator**. Decorators are functions
-that wrap other functions or classes. The `@` syntax is just shorthand:
+Now the payoff. If you haven't seen it before, `@dataclass` is a **decorator**. Decorators are
+functions that wrap other functions or classes. The `@` syntax is just shorthand:
 
 ```python
 # These two are identical:
@@ -205,6 +282,10 @@ class Config:
 service = MyService("world")
 config = Config(host="localhost")
 config_custom = Config(host="localhost", port=3000)
+
+# --- Functions as values ---
+f = double                      # the function object; double() would call it
+sorted(xs, key=lambda x: x.name)  # inline function, one expression, implicit return
 
 # --- Static method call (no instance needed) ---
 MyService.utility()          # "I'm a utility"

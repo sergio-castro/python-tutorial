@@ -268,6 +268,10 @@ each run: a `Runtime` object carrying the context you supplied at invoke time, t
 identifiers, and (when deployed) server metadata. The `rt` in `lambda rt: ...` is the same
 argument, just conventionally abbreviated.
 
+If the `lambda` form itself is unfamiliar: it is a Python expression that builds an unnamed
+function, equivalent to the `def` above and usable inline as an argument. See
+[Functions Are Values](../python/05-object-oriented-python.md#functions-are-values).
+
 One thing to not misread: `namespace=lambda rt: ...` resembles the **deprecated backend factory**
 (`backend=lambda rt: StateBackend(rt)`, covered at the end of this chapter) but has nothing to do
 with it. Wrapping the *backend* in a lambda is the deprecated pattern. Passing a function to
