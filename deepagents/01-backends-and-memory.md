@@ -720,6 +720,28 @@ nothing is remembered between calls.
 On LangSmith Deployment, delete the `store=` and `checkpointer=` arguments entirely — the
 platform provisions both — and switch `rt.context.user_id` to `rt.server_info.user.identity`.
 
+### Who supplies the checkpointer
+
+This cuts both ways, and the second direction is a trap when reading the official docs. Many of
+their snippets reuse a `thread_id` across calls and never pass a `checkpointer`, which reads as
+though continuity were automatic. It is not — those pages are written for code that runs **under
+the Agent Server**. The *Going to production* page says so once, at the top: all its snippets
+assume a `langgraph.json` pointing at your graph. The server then owns persistence and injects a
+checkpointer, which is exactly why the code never mentions one.
+
+| How you run it | Who provides the checkpointer |
+|--------------------------------------------|---------------------------------------|
+| A plain script calling `agent.invoke(...)` | **You**, via `checkpointer=`, or nothing persists |
+| `langgraph dev` with a `langgraph.json` | The local Agent Server |
+| Deployed to LangSmith | The platform |
+
+So copying such a snippet into a standalone script gives you an agent that forgets everything
+between calls, with a `thread_id` that identifies nothing. Nothing errors — the argument is
+accepted and ignored — which is what makes it worth knowing.
+
+The reverse mistake is harmless by comparison: passing your own `checkpointer` while deployed just
+overrides infrastructure that was already there.
+
 ## Three Things Called "Memory"
 
 The word is overloaded in the docs, so:
@@ -739,6 +761,7 @@ The word is overloaded in the docs, so:
 |---------------------------------------------|--------------------------------------------------------|
 | File written in one session is gone in the next | `StateBackend` with a new `thread_id` — expected; route it to a store |
 | Everything lost on deploy/restart | `InMemorySaver` / `InMemoryStore` in production |
+| A docs snippet reuses `thread_id` but forgets anyway | That snippet assumed the Agent Server; in a plain script you must pass `checkpointer=` yourself |
 | `StoreBackend` errors or writes nowhere | No `store=` passed to `create_deep_agent` |
 | A file under a routed prefix stays ephemeral | Path doesn't match the route — `/memories.txt` is not `/memories/…` |
 | Two users see each other's memories | No `namespace` factory; defaulted to `assistant_id` |
