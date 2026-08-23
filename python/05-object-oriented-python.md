@@ -137,7 +137,7 @@ wavelength, a decay constant — the convention from PEP 8 is a trailing undersc
 What it produces is **an ordinary function**, not a distinct kind of object:
 
 ```python
-f = lambda n: n * 2
+f = lambda n: n * 2          # shown for comparison only — see below
 def g(n): return n * 2
 
 type(f) is type(g)   # True — both are <class 'function'>
@@ -147,6 +147,51 @@ g.__name__           # 'g'
 
 There is no "lambda type" to learn. The only trace of how it was written is the name, which is
 why a stack trace through one says `<lambda>` and tells you nothing about where it came from.
+
+### Don't give one a name
+
+That first line is exactly what you should not write. PEP 8: *"Always use a `def` statement
+instead of an assignment statement that binds a lambda expression directly to an identifier."*
+[Ruff](./07-linting-and-formatting.md) enforces it as **`E731`**:
+
+```
+E731 Do not assign a `lambda` expression, use a `def`
+```
+
+Two reasons, and both are ones you have already met. You get a real name in tracebacks instead of
+`<lambda>`. And naming it throws away the only thing a lambda offers over a `def` — the ability to
+sit inside another expression. A named lambda is a `def` with worse diagnostics.
+
+### Argument forms
+
+The parameter list behaves like any other, including defaults:
+
+```python
+lambda: 42                                  # no arguments
+lambda a, b: a + b                          # several
+lambda a, b=10: a + b                       # with a default
+lambda n: "even" if n % 2 == 0 else "odd"   # conditional *expression*, allowed
+```
+
+### The one real trap: late binding
+
+A lambda captures the **variable**, not its value at the moment of creation. Build them in a loop
+and they all see the loop variable's final value:
+
+```python
+fs = [lambda: i for i in range(3)]
+[f() for f in fs]            # [2, 2, 2]  — not [0, 1, 2]
+```
+
+The standard fix is a default argument, which *is* evaluated at definition time:
+
+```python
+fs = [lambda i=i: i for i in range(3)]
+[f() for f in fs]            # [0, 1, 2]
+```
+
+This is the same evaluated-once rule behind the mutable-default-argument trap that
+[Ruff's `B006`](./07-linting-and-formatting.md) catches — here it works in your favour.
 
 Read the expression as: *"a function taking `n`, returning `n * 2`"*. Everything before the colon
 is the parameter list; the single expression after it is the return value, with no `return`
@@ -159,6 +204,8 @@ spot instead of naming it first:
 ```python
 names = ["Bruce", "alice", "Carla"]
 names.sort(key=lambda name: name.lower())     # sort case-insensitively
+
+max(orders, key=lambda o: o.total)            # same idea: min, max, sorted
 ```
 
 `key=` here is not receiving a value; it is receiving a function that `sort` will call once per
@@ -295,8 +342,9 @@ config = Config(host="localhost")
 config_custom = Config(host="localhost", port=3000)
 
 # --- Functions as values ---
-f = double                      # the function object; double() would call it
+f = double                        # the function object; double() would call it
 sorted(xs, key=lambda x: x.name)  # inline function, one expression, implicit return
+g = lambda x: x.name              # don't: PEP 8 / ruff E731 — use a def
 
 # --- Static method call (no instance needed) ---
 MyService.utility()          # "I'm a utility"
