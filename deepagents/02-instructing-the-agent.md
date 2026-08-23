@@ -312,6 +312,22 @@ def search_orders(user_id: str, status: str, limit: int = 10) -> str:
     """
 ```
 
+One harness tool you have to ask for: **task planning**. Passing `TodoListMiddleware` gives the
+agent a `write_todos` tool for keeping a structured task list as it works, which helps on long
+multi-step jobs, with less capable models that benefit from an explicit accountability tool, and
+for UIs that stream progress from agent state:
+
+```python
+from langchain.agents.middleware import TodoListMiddleware
+
+agent = create_deep_agent(model="anthropic:claude-sonnet-4-6", middleware=[TodoListMiddleware()])
+```
+
+Note the import: this is a LangChain middleware, not a Deep Agents one. **It is opt-in only
+starting in deepagents v0.7** — earlier versions included it by default, which is why older
+material describes planning as something a deep agent simply has. It was not deprecated and
+nothing replaced it; it just stopped being automatic.
+
 Two levers when this gets expensive. Unused built-in tools still send their full schemas every
 turn, so `excluded_tools` removes ones the agent should never call — `write_file` or `execute` on
 a read-only agent — and shrinks the baseline prompt for the whole run. And a [harness profile](./03-harness-profiles.md)'s

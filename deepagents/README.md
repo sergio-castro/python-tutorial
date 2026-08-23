@@ -1,7 +1,8 @@
 # Deep Agents
 
 Deep Agents is the top layer of the LangChain stack — an agent harness built on LangChain and
-LangGraph that ships with planning, a filesystem, subagents, and memory already wired up.
+LangGraph that ships with a filesystem, subagents, and memory already wired up. Task planning is
+a fourth capability, opt-in since v0.7.
 
 ## Topics
 
