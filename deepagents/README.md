@@ -25,6 +25,10 @@ LangGraph that ships with planning, a filesystem, subagents, and memory already 
    What the harness does automatically when context fills up: offloading, summarization, and
    prompt caching — when each triggers, and the defaults.
 
+6. [Guardrails and Tracing](./06-guardrails-and-tracing.md)
+   Approving, blocking, logging, and tracing tool calls, subagent delegation, and skill
+   activation — and why the last two need no special machinery.
+
 ---
 
 Back to [Index](../README.md)

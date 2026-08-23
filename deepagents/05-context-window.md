@@ -249,4 +249,5 @@ Sources: [Context engineering](https://docs.langchain.com/oss/python/deepagents/
 [Overview](https://docs.langchain.com/oss/python/deepagents/overview).
 
 Previous: [Code Execution](./04-code-execution.md) |
+Next: [Guardrails and Tracing](./06-guardrails-and-tracing.md) |
 Back to [Deep Agents](./README.md) | [Index](../README.md)
