@@ -43,6 +43,36 @@ forever. Keep `StateBackend` as the default.
 One limitation worth knowing: compression does not resize images or lower their resolution. Large
 multimodal inputs are not handled by any of this.
 
+### Server-side tools are not exempt
+
+Some providers — Google, OpenAI, Anthropic — offer built-in tools such as web search that run
+**server-side**: the provider executes them inside its own turn, and you never host or call
+anything.
+
+It is tempting to conclude that their output never reaches you. It does. LangChain's description
+is explicit: when a model invokes a tool server-side, *the content of the response message
+includes content representing the invocation and the result*. The search runs over there; the
+findings come back here, in the response, and from then on they sit in the message history and
+are re-sent on every subsequent turn like anything else.
+
+So "server-side" means you are spared **executing** the tool — not **paying for** its output. A
+large search result is a recurring context cost either way.
+
+Two practical consequences:
+
+- There is something to compress, because the text is in your process the moment the response
+  returns.
+- Whether the automatic 20,000-token offloading intercepts these is **not documented**. The
+  threshold is described in terms of tool call results, and a server-side result arrives as a
+  content block inside the assistant message rather than as a separate tool message. Do not
+  assume it is handled the same way.
+
+What definitely works is the agent doing it explicitly: it can `write_file` a large result and
+`read_file` the parts it needs later. That is agent-driven offloading rather than the automatic
+kind, it works no matter where the tool ran, and it is what the Deep Agents quickstart is
+describing when it says the agent "manages context by using file system tools to offload large
+search results".
+
 ## Summarization
 
 When the context is still too large and **nothing is left that offloading can help with**, the
@@ -218,6 +248,7 @@ Prompt caching sits alongside all of these, reducing the cost of whatever surviv
 | Cache never seems to hit | Something rewrites the head of the prompt each turn, or more than 5 minutes passed between turns |
 | Two summarization middlewares run | Your instance's name did not match the built-in, so it was added instead of replacing it |
 | Compression does nothing for huge images | Images are not resized or re-encoded by any of this |
+| A server-side search result bloats context | "Server-side" spares you running the tool, not its output — the result returns in the response and stays in history |
 | Thresholds behave oddly on an unknown model | No model profile was found — the 170,000 / 6-message fallback is in effect |
 
 ## Cheat Sheet
