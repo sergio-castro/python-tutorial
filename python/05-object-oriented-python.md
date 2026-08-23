@@ -123,23 +123,34 @@ fails somewhere far away from the line that caused it.
 
 ### `lambda`: a function without a name
 
-`lambda` is an **expression that creates a function**. It is not a keyword-driven constant, not a
-special type, and not a value being captured — it is a function object, written inline:
+`lambda` is a **reserved keyword** — one of Python's 35, alongside `def`, `class`, and `return` —
+and the expression it introduces creates a function:
 
 ```python
 lambda n: n * 2
 ```
 
-Read it as: *"a function taking `n`, returning `n * 2`"*. Everything before the colon is the
-parameter list; the single expression after it is the return value, with no `return` keyword. It
-is exactly equivalent to a `def`:
+Two consequences of it being reserved. You cannot use it as a name: `lambda = 5` is a
+`SyntaxError`, not a shadowing warning. And where the word is genuinely the right one — a
+wavelength, a decay constant — the convention from PEP 8 is a trailing underscore, `lambda_`.
+
+What it produces is **an ordinary function**, not a distinct kind of object:
 
 ```python
-double = lambda n: n * 2
+f = lambda n: n * 2
+def g(n): return n * 2
 
-def double(n):                    # identical in behaviour
-    return n * 2
+type(f) is type(g)   # True — both are <class 'function'>
+f.__name__           # '<lambda>'
+g.__name__           # 'g'
 ```
+
+There is no "lambda type" to learn. The only trace of how it was written is the name, which is
+why a stack trace through one says `<lambda>` and tells you nothing about where it came from.
+
+Read the expression as: *"a function taking `n`, returning `n * 2`"*. Everything before the colon
+is the parameter list; the single expression after it is the return value, with no `return`
+keyword.
 
 The point is not brevity but **position**: a `lambda` can appear in the middle of an argument
 list, where a `def` cannot. So when a library asks you for a function, you can supply one on the
@@ -156,7 +167,7 @@ function, and the framework decides when to call it and what to pass in.
 
 Limits, by design: a lambda holds **one expression**, so no statements, no `if/else` blocks (the
 `a if cond else b` expression is fine), no loops, and no annotations. Anything longer wants a
-`def`, which also gets you a name in the traceback.
+`def` — which also gets you a real name in the traceback instead of `<lambda>`.
 
 For Java developers this is the same idea as `n -> n * 2`, and a named function passed by
 reference is `Foo::bar`. Python simply makes no distinction between the two: both are just the
