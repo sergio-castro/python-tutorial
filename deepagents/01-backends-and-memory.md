@@ -39,6 +39,8 @@ configurable; you pick it by picking the class.
 Three words show up in that last column before they are properly introduced:
 
 - A **thread** is one conversation, identified by a `thread_id` you pass in at invoke time.
+  Nothing to do with an operating-system thread — the sense is the one from email or Slack. See
+  [Per-Thread vs Cross-Thread](#per-thread-vs-cross-thread).
 - A **namespace** is a tuple of strings that carves the store into compartments. It behaves like
   a path: `("alice",)` is one compartment and `("alice", "chat-7")` nests inside it. You compose
   it from whatever you want to isolate by — user, agent, conversation, or several of those in the
@@ -442,7 +444,30 @@ decides whether the simple rules apply at all.
 
 ## Per-Thread vs Cross-Thread
 
-A **thread** is one conversation, identified by `thread_id`:
+### First, the word
+
+"Thread" here has **nothing to do with operating-system threads**. No `threading.Thread`, no
+concurrency, no CPU scheduling. The sense is the one from email or Slack: a set of messages that
+belong together. The docs call it "a persistent conversation container that maintains state across
+multiple runs".
+
+"Session" is closer but still off, because a session usually implies something being *open* — a
+connection, a login, a process. A thread implies none of that:
+
+- **It is only an identifier.** You invent the string. Nothing is created, opened, or closed.
+- **Nothing runs between invocations.** Between turns a thread is rows in a database keyed by that
+  id, and nothing else.
+- **It outlives the process.** With a durable checkpointer you can resume a thread days later,
+  from a different machine, after a deploy.
+- **They are not exclusive.** One user can have many threads at once; the same thread can be
+  served by different OS threads, processes, or workers on different requests.
+
+The two ideas are simply orthogonal. A single OS thread can serve a hundred conversations, and one
+conversation can be handled by a different OS thread every turn.
+
+### Using it
+
+A thread is one conversation, identified by `thread_id`:
 
 ```python
 config = {"configurable": {"thread_id": "conversation-42"}}
