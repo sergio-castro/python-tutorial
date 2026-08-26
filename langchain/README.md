@@ -10,7 +10,8 @@ The bottom layer of the stack — the agent framework: models, tools, and the ag
    execution order, and shaping what hooks record into traces.
 
 2. [Tools](./02-tools.md)
-   Defining tools with `@tool`, why the docstring is a prompt, and passing them to `create_agent`.
+   Defining tools with `@tool`, why the docstring is a prompt, passing them to
+   `create_agent` — and why the set the model is offered is not always the set you passed.
 
 3. [Subagents and Skills](./03-subagents-and-skills.md)
    Both exist here as patterns rather than parameters — an agent wrapped as a tool, and a tool

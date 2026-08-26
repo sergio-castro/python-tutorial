@@ -94,6 +94,22 @@ Pass instances to the agent:
 agent = create_agent(model="gpt-5.5", tools=[...], middleware=[ToolMonitoringMiddleware()])
 ```
 
+## Beyond Hooks
+
+Hooks are not the only thing a middleware contributes. A class-based middleware can declare three
+attributes that `create_agent` reads at compile time, independently of any hook:
+
+| Attribute | Contributes |
+|----------------|---------------------------------------------------------------------|
+| `tools` | Extra tools, merged into the agent's tool set |
+| `state_schema` | Extra fields on the agent state |
+| `transformers` | Stream transformer factories (requires `langchain>=1.3.2`) |
+
+`tools` is the one that catches people out, because it means a middleware can hand the model
+capabilities the call site never passed. `TodoListMiddleware` supplies `write_todos` this way,
+and the entire Deep Agents file toolset arrives the same way. See
+[The Tool List Is Not the Whole Set](./02-tools.md#the-tool-list-is-not-the-whole-set).
+
 ## Execution Order
 
 With `middleware=[m1, m2, m3]`:
