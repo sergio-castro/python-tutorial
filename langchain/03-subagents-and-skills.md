@@ -138,7 +138,7 @@ routers or custom workflows, and a subagent can itself use the skills pattern.
 
 ---
 
-Previous: [Tools](./02-tools.md)
+Previous: [Tools](./02-tools.md) | Next: [PII Detection](./04-pii-detection.md)
 
 Sources: [Multi-agent](https://docs.langchain.com/oss/python/langchain/multi-agent/index),
 [Subagents](https://docs.langchain.com/oss/python/langchain/multi-agent/subagents),

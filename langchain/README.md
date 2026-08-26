@@ -17,6 +17,10 @@ The bottom layer of the stack — the agent framework: models, tools, and the ag
    Both exist here as patterns rather than parameters — an agent wrapped as a tool, and a tool
    that returns a prompt — plus the other multi-agent patterns and how to choose.
 
+4. [PII Detection](./04-pii-detection.md)
+   `PIIMiddleware` in practice: why detectors and strategies are independent, what each of the
+   four strategies emits, and the one strategy that treats custom types differently.
+
 ---
 
 Back to [Index](../README.md)

@@ -110,6 +110,14 @@ capabilities the call site never passed. `TodoListMiddleware` supplies `write_to
 and the entire Deep Agents file toolset arrives the same way. See
 [The Tool List Is Not the Whole Set](./02-tools.md#the-tool-list-is-not-the-whole-set).
 
+## Built-in Middleware
+
+You will not write most of the middleware you use. LangChain ships classes for summarization, tool
+call limits, human-in-the-loop approval, PII redaction, and more; they are ordinary
+`AgentMiddleware` subclasses with no privileged access, so everything in this chapter applies to
+them. [PII Detection](./04-pii-detection.md) works one of them through in detail, because its
+`detector` / `strategy` split is a good model for how configurable middleware is usually shaped.
+
 ## Execution Order
 
 With `middleware=[m1, m2, m3]`:
